@@ -28,6 +28,7 @@ using Newtonsoft.Json;
 using System.Threading.Tasks;
 using System.Net.Http.Headers;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Consul
 {
@@ -57,6 +58,7 @@ namespace Consul
     public class ConsulClientConfiguration
     {
         private NetworkCredential _httpauth;
+        private X509Certificate2 _clientCertificate;
         /// <summary>
         /// The Uri to connect to the Consul agent.
         /// </summary>
@@ -87,6 +89,25 @@ namespace Consul
             }
         }
 
+        public X509Certificate2 ClientCertificate
+        {
+            internal get
+            {
+                return _clientCertificate;
+            }
+            set
+            {
+                _clientCertificate = value;
+                if (_clientCertificate != null)
+                {
+                    var handler = (Handler as WebRequestHandler);
+                    handler.ClientCertificates.Add(_clientCertificate);
+                    handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                }
+            }
+        }
+
+        
         /// <summary>
         /// Token is used to provide an ACL token which overrides the agent's default token. This ACL token is used for every request by
         /// clients created using this configuration.
@@ -112,7 +133,7 @@ namespace Consul
             UriBuilder consulAddress = new UriBuilder("http://127.0.0.1:8500");
             Handler = new WebRequestHandler();
             ConfigureFromEnvironment(consulAddress);
-
+            
             Address = consulAddress.Uri;
         }
 
